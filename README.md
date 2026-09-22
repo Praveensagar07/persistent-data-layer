@@ -8,11 +8,44 @@ This project establishes an enterprise-grade relational database architecture ex
 
 ---
 
-## Objective
+## Week 3 Internship Objective
 
 The objective of Week 3 is to integrate a **real relational database** into the REST API so that User, Project, and Task data persist reliably across service lifecycles, with relationships modeled intentionally, validation enforced at both the API and database levels, and credentials handled securely through environment variables.
 
 This project serves as the production-ready backend and persistent database foundation for **Week 4: AI-Powered Project & Task Management Platform**.
+
+### Critical Task 3 Requirements
+- **User Data Storage:** Persistent user accounts with unique email addresses and role assignments.
+- **Project Data Storage:** Persistent project initiatives linked to user owners.
+- **Task Data Storage:** Persistent work items linked to projects and assigned users.
+- **Full CRUD Operations:** Complete Create, Read, Update, Delete across all entities.
+- **Schema-Level Validation:** Database constraints (CHECK, NOT NULL, UNIQUE, FOREIGN KEY) in addition to API payload validation.
+- **Relational Integrity:** Foreign key constraints with defined deletion semantics (cascade on project deletion; set-null on user deletion).
+- **Secure Configuration:** Zero hard-coded credentials; 100% environment-driven settings.
+
+---
+
+## Features
+
+- **Relational Data Persistence:** Full ACID transactions across PostgreSQL and SQLite.
+- **Relational Integrity & Foreign Keys:**
+  - `users` $1 \to N$ `projects` (owns; cascade on delete)
+  - `projects` $1 \to N$ `tasks` (contains; cascade on delete)
+  - `users` $1 \to N$ `tasks` (assigned; set null on delete)
+- **Schema-Level Validation:**
+  - `UNIQUE` constraint on user email with case-insensitive normalization.
+  - Database `CHECK` constraint on project status (`planning`, `active`, `completed`, `archived`).
+  - Database `CHECK` constraint on project priority (`low`, `medium`, `high`, `critical`).
+  - Database `CHECK` constraint on task status (`todo`, `in-progress`, `done`).
+  - Database `CHECK` constraint on task priority (`low`, `medium`, `high`, `critical`).
+- **Complete CRUD Endpoints:** Full Create, Read, Update, Delete across Users, Projects, and Tasks.
+- **Dedicated Task Workflow:** Dedicated `/tasks/{id}/status` endpoint for granular lifecycle progression (`todo` $\to$ `in-progress` $\to$ `done`).
+- **Filtering & Pagination:** Query tasks by `status`, `priority`, `project_id`, `assignee_id`; query projects by `owner_id`, `status`; query users by `role`.
+- **Database Migrations:** Reproducible schema migrations managed via Alembic.
+- **Connection Management:** Connection pooling with `pool_pre_ping=True`, request-scoped transactional sessions, and automatic rollback on failure.
+- **Enterprise Error Handling:** Standardized `{ "error": { "code", "message", "details" } }` envelopes without credential or stack trace leaks.
+- **Zero-Credential Security:** Pure environment-based configuration; `.env.example` contains placeholders only.
+- **Interactive API Documentation:** Auto-generated Swagger UI (`/docs`) and ReDoc (`/redoc`).
 
 ---
 
@@ -43,33 +76,9 @@ tests/                 # Pytest test suites (CRUD, constraints, relationships, p
 
 ---
 
-## Features
-
-- **Relational Data Persistence:** Full ACID transactions across PostgreSQL and SQLite.
-- **Relational Integrity & Foreign Keys:**
-  - `users` $1 \to N$ `projects` (owns; cascade on delete)
-  - `projects` $1 \to N$ `tasks` (contains; cascade on delete)
-  - `users` $1 \to N$ `tasks` (assigned; set null on delete)
-- **Schema-Level Validation:**
-  - `UNIQUE` constraint on user email with case-insensitive normalization.
-  - Database `CHECK` constraint on project status (`planning`, `active`, `completed`, `archived`).
-  - Database `CHECK` constraint on project priority (`low`, `medium`, `high`, `critical`).
-  - Database `CHECK` constraint on task status (`todo`, `in-progress`, `done`).
-  - Database `CHECK` constraint on task priority (`low`, `medium`, `high`, `critical`).
-- **Complete CRUD Endpoints:** Full Create, Read, Update, Delete across Users, Projects, and Tasks.
-- **Dedicated Task Workflow:** Dedicated `/tasks/{id}/status` endpoint for granular lifecycle progression (`todo` $\to$ `in-progress` $\to$ `done`).
-- **Filtering & Pagination:** Query tasks by `status`, `priority`, `project_id`, `assignee_id`; query projects by `owner_id`, `status`; query users by `role`.
-- **Database Migrations:** Reproducible schema migrations managed via Alembic.
-- **Connection Management:** Connection pooling with `pool_pre_ping=True`, request-scoped transactional sessions, and automatic rollback on failure.
-- **Enterprise Error Handling:** Standardized `{ "error": { "code", "message", "details" } }` envelopes without credential or stack trace leaks.
-- **Zero-Credential Security:** Pure environment-based configuration; `.env.example` contains placeholders only.
-- **Interactive API Documentation:** Auto-generated Swagger UI (`/docs`) and ReDoc (`/redoc`).
-
----
-
 ## Tech Stack
 
-- **Language:** Python 3.14+
+- **Language:** Python 3.14+ (Python 3.10+ supported)
 - **API Framework:** FastAPI 0.110+
 - **ORM / Database Toolkit:** SQLAlchemy 2.0+ (Declarative Mappings, Typed Queries)
 - **Database Driver:** `psycopg` (psycopg 3 binary driver for PostgreSQL)
@@ -80,7 +89,7 @@ tests/                 # Pytest test suites (CRUD, constraints, relationships, p
 
 ---
 
-## Database Schema & Relationships
+## Database Schema
 
 ### Entity-Relationship Diagram
 
@@ -131,136 +140,6 @@ erDiagram
 
 ---
 
-## Prerequisites
-
-- **Python 3.10+** (Python 3.14 tested and verified)
-- **PostgreSQL 14+** (or SQLite for offline/development use)
-- **Git**
-
----
-
-## Environment Variables
-
-Copy `.env.example` to create your local `.env`:
-
-```bash
-cp .env.example .env
-```
-
-| Variable | Default Value | Description |
-|---|---|---|
-| `APP_NAME` | `Persistent Data Layer` | Display name of the application |
-| `APP_ENV` | `development` | Environment name (`development`, `staging`, `production`) |
-| `APP_VERSION` | `1.0.0` | Semantic version identifier |
-| `DEBUG` | `true` | Debug mode toggle |
-| `API_PREFIX` | `/api/v1` | URL route prefix for REST endpoints |
-| `HOST` | `0.0.0.0` | ASGI bind interface |
-| `PORT` | `8000` | ASGI bind port |
-| `DATABASE_URL` | `postgresql+psycopg://<user>:<pwd>@localhost:5432/<db>` | Database connection URI |
-| `DB_POOL_SIZE` | `10` | SQLAlchemy connection pool size |
-| `DB_MAX_OVERFLOW` | `20` | Max overflow connections allowed |
-| `DB_POOL_TIMEOUT` | `30` | Connection pool wait timeout (seconds) |
-| `DB_POOL_PRE_PING` | `true` | Test connection liveness before checking out |
-| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
-| `SEED_DATA_ON_STARTUP` | `true` | Auto-populate development seed records if DB is empty |
-
-> [!NOTE]
-> Never commit real database passwords or credentials to version control. The repository `.gitignore` strictly excludes `.env` and all database files.
-
----
-
-## Installation
-
-1. Clone repository and navigate to project folder:
-   ```bash
-   git clone https://github.com/Praveensagar07/persistent-data-layer.git
-   cd persistent-data-layer
-   ```
-
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On Linux/macOS:
-   source venv/bin/activate
-   ```
-
-3. Install required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
----
-
-## Database Setup & Migrations
-
-### Setting up PostgreSQL Database
-Create a new database in PostgreSQL using `psql`:
-```sql
-CREATE DATABASE persistent_db;
-```
-
-Update `DATABASE_URL` in `.env`:
-```ini
-DATABASE_URL=postgresql+psycopg://postgres:your_password@localhost:5432/persistent_db
-```
-
-*(Alternatively, to run locally with zero external setup, leave `DATABASE_URL=sqlite:///./persistent_data.db`)*
-
-### Applying Migrations
-Run Alembic to apply all migrations up to head:
-```bash
-python -m alembic upgrade head
-```
-
-To rollback a migration:
-```bash
-python -m alembic downgrade -1
-```
-
----
-
-## Running the API
-
-Start the ASGI server with hot reloading enabled:
-```bash
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Once running:
-- **API Root:** `http://localhost:8000/`
-- **Health Check:** `http://localhost:8000/health`
-- **Interactive Swagger Docs:** `http://localhost:8000/docs`
-- **ReDoc Documentation:** `http://localhost:8000/redoc`
-
----
-
-## Seeding Development Data
-
-To manually populate the database with realistic development data (4 users, 4 projects, 11 tasks):
-```bash
-python -m app.db.seed
-```
-*(The API will also automatically seed the database on first startup if `SEED_DATA_ON_STARTUP=true`)*
-
----
-
-## Testing
-
-Run the comprehensive test suite with Pytest:
-```bash
-pytest -v
-```
-
-### Official 10-Step Persistence Verification Test
-To run the dedicated persistence verification test that writes data, terminates the API session and engine, cold-restarts from disk, and verifies 100% data integrity:
-```bash
-python scripts/verify_persistence.py
-```
-
----
-
 ## API Endpoints
 
 ### Users (`/api/v1/users`)
@@ -293,75 +172,252 @@ python scripts/verify_persistence.py
 
 ---
 
-## Example API Requests
+## Database Setup
 
-### 1. Create a User
-```http
-POST /api/v1/users HTTP/1.1
-Host: localhost:8000
-Content-Type: application/json
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Configure your `DATABASE_URL` for PostgreSQL:
+   ```ini
+   DATABASE_URL=postgresql+psycopg://postgres:your_password@localhost:5432/developer_productivity
+   ```
+3. Run Alembic migrations to construct the database schema:
+   ```bash
+   python -m alembic upgrade head
+   ```
 
-{
-  "name": "Sarah Connor",
-  "email": "sarah.connor@example.com",
-  "role": "lead_architect"
-}
+---
+
+## Environment Variables
+
+| Variable | Default Value | Description |
+|---|---|---|
+| `APP_NAME` | `Persistent Data Layer` | Display name of the application |
+| `APP_ENV` | `development` | Environment name (`development`, `staging`, `production`) |
+| `APP_VERSION` | `1.0.0` | Semantic version identifier |
+| `DEBUG` | `true` | Debug mode toggle |
+| `API_PREFIX` | `/api/v1` | URL route prefix for REST endpoints |
+| `HOST` | `0.0.0.0` | ASGI bind interface |
+| `PORT` | `8000` | ASGI bind port |
+| `DATABASE_URL` | `postgresql+psycopg://username:password@localhost:5432/developer_productivity` | Database connection URI |
+| `DB_POOL_SIZE` | `10` | SQLAlchemy connection pool size |
+| `DB_MAX_OVERFLOW` | `20` | Max overflow connections allowed |
+| `DB_POOL_TIMEOUT` | `30` | Connection pool wait timeout (seconds) |
+| `DB_POOL_PRE_PING` | `true` | Test connection liveness before checking out |
+| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
+| `SEED_DATA_ON_STARTUP` | `true` | Auto-populate development seed records if DB is empty |
+
+> [!NOTE]
+> Never commit real database passwords or credentials to version control. The repository `.gitignore` strictly excludes `.env` and all database files.
+
+---
+
+## Alembic Migrations
+
+Migrations are managed with Alembic for full version control and schema reproducibility:
+
+- **Apply all migrations:**
+  ```bash
+  python -m alembic upgrade head
+  ```
+- **Rollback one migration:**
+  ```bash
+  python -m alembic downgrade -1
+  ```
+- **Create a new migration:**
+  ```bash
+  python -m alembic revision --autogenerate -m "description_of_change"
+  ```
+
+---
+
+## Local Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Praveensagar07/persistent-data-layer.git
+   cd persistent-data-layer
+   ```
+2. Create and activate a Python virtual environment:
+   ```bash
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On Linux/macOS:
+   source venv/bin/activate
+   ```
+3. Install required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+## Running the API
+
+Start the FastAPI application with Uvicorn:
+```bash
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-**Response (201 Created):**
-```json
-{
-  "data": {
-    "id": "usr_7a8b9c0d1e2f3a4b",
-    "name": "Sarah Connor",
-    "email": "sarah.connor@example.com",
-    "role": "lead_architect",
-    "created_at": "2026-09-20T12:00:00Z",
-    "updated_at": "2026-09-20T12:00:00Z"
-  }
-}
+
+When started, the API exposes:
+- **API Root:** [http://localhost:8000/](http://localhost:8000/)
+- **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
+- **Interactive Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc Documentation:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+---
+
+## Running Tests
+
+Run the complete 36-test automated test suite:
+```bash
+python -m pytest -v
 ```
 
-### 2. Create a Project
-```http
-POST /api/v1/projects HTTP/1.1
-Host: localhost:8000
-Content-Type: application/json
-
-{
-  "name": "Developer Productivity Platform",
-  "description": "Unified metrics and task management dashboard.",
-  "status": "active",
-  "priority": "critical",
-  "owner_id": "usr_7a8b9c0d1e2f3a4b"
-}
+Or for concise output:
+```bash
+python -m pytest -q
 ```
 
-### 3. Create a Task
-```http
-POST /api/v1/tasks HTTP/1.1
-Host: localhost:8000
-Content-Type: application/json
-
-{
-  "title": "Implement Database Migrations",
-  "description": "Configure Alembic versioning for users, projects, and tasks.",
-  "project_id": "prj_9a8b7c6d5e4f3a2b",
-  "assignee_id": "usr_7a8b9c0d1e2f3a4b",
-  "status": "in-progress",
-  "priority": "high"
-}
+### Official 10-Step Persistence Verification Test
+Verify actual cold-restart persistence across complete process/engine shutdown:
+```bash
+python scripts/verify_persistence.py
 ```
 
-### 4. Progress Task Status
-```http
-PATCH /api/v1/tasks/tsk_1a2b3c4d5e6f7a8b/status HTTP/1.1
-Host: localhost:8000
-Content-Type: application/json
+---
 
-{
-  "status": "done"
-}
+## PostgreSQL Setup
+
+### Creating PostgreSQL Database
+Connect to your local or hosted PostgreSQL instance via `psql`:
+```sql
+-- Connect to PostgreSQL CLI
+psql -U postgres
+
+-- Create dedicated database
+CREATE DATABASE developer_productivity;
+
+-- Grant permissions if using dedicated user
+GRANT ALL PRIVILEGES ON DATABASE developer_productivity TO postgres;
 ```
+
+Update your `.env` file:
+```ini
+DATABASE_URL=postgresql+psycopg://postgres:your_password@localhost:5432/developer_productivity
+```
+
+Then run the initial migration:
+```bash
+python -m alembic upgrade head
+```
+
+---
+
+## Deployment
+
+The application is container-ready and configured for production deployment on platforms such as Render, Railway, AWS ECS, or Fly.io:
+
+1. **Procfile / Start Command:**
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port $PORT
+   ```
+2. **Environment Variables:** Set `DATABASE_URL` to your managed PostgreSQL connection URI (e.g., Supabase, Neon, AWS RDS, or Render PostgreSQL).
+3. **Release Command:** Execute database migrations automatically before booting:
+   ```bash
+   alembic upgrade head
+   ```
+
+---
+
+## Project Structure
+
+```
+persistent-data-layer/
+├── alembic.ini                   # Alembic configuration
+├── alembic/                      # Database migrations
+│   ├── env.py                    # Migration environment runner
+│   ├── script.py.mako            # Migration template
+│   └── versions/
+│       └── 001_initial_schema.py # Initial relational schema migration
+├── app/
+│   ├── __init__.py
+│   ├── main.py                   # FastAPI app entrypoint, lifespan, middlewares
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── router.py             # Versioned router aggregator
+│   │   └── routes/
+│   │       ├── __init__.py
+│   │       ├── users.py          # User CRUD routes (/api/v1/users)
+│   │       ├── projects.py       # Project CRUD routes (/api/v1/projects)
+│   │       └── tasks.py          # Task CRUD routes (/api/v1/tasks)
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py             # Environment configuration and settings
+│   │   ├── error_handlers.py     # Centralized exception handlers
+│   │   └── exceptions.py         # Custom domain exceptions
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── base.py               # DeclarativeBase definition
+│   │   ├── seed.py               # Development dataset seeder
+│   │   └── session.py            # Engine, pooling, and get_db session dependency
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py               # User SQLAlchemy model
+│   │   ├── project.py            # Project SQLAlchemy model
+│   │   └── task.py               # Task SQLAlchemy model
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   ├── user_repository.py    # User data access layer
+│   │   ├── project_repository.py # Project data access layer
+│   │   └── task_repository.py    # Task data access layer
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── common.py             # Common response envelopes and pagination
+│   │   ├── user.py               # User Pydantic request/response schemas
+│   │   ├── project.py            # Project Pydantic request/response schemas
+│   │   └── task.py               # Task Pydantic request/response schemas
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── user_service.py       # User business logic
+│   │   ├── project_service.py    # Project business logic
+│   │   └── task_service.py       # Task business logic
+│   └── utils/
+│       ├── __init__.py
+│       └── ids.py                # Prefixed UUID generators (usr_, prj_, tsk_)
+├── scripts/
+│   └── verify_persistence.py     # Standalone 10-step persistence verification test
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py               # Test database fixtures and test client
+│   ├── test_constraints.py       # Database-level constraint tests
+│   ├── test_demo_workflow.py     # End-to-end integration workflow tests
+│   ├── test_errors.py            # Error format and status code tests
+│   ├── test_filters_and_pagination.py # Filter and pagination tests
+│   ├── test_persistence.py       # Cold-restart persistence tests
+│   ├── test_projects.py          # Project CRUD and relationship tests
+│   ├── test_relationships.py     # Foreign key cascade and set-null tests
+│   ├── test_tasks.py             # Task CRUD and status workflow tests
+│   └── test_users.py             # User CRUD and email uniqueness tests
+├── .env.example                  # Safe configuration placeholders
+├── .gitignore                    # Secrets, caches, and DB file exclusions
+├── requirements.txt              # Production and testing dependencies
+└── README.md                     # Comprehensive documentation
+```
+
+---
+
+## Swagger Documentation
+
+FastAPI automatically generates interactive OpenAPI documentation:
+
+- **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
+  Provides an interactive interface to execute live queries against the persistent database, test CRUD operations, and verify validation rules.
+- **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+  Provides clean, readable API specification documentation.
+- **OpenAPI JSON Schema:** [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
 
 ---
 

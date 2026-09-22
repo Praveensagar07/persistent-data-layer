@@ -123,3 +123,85 @@ def test_invalid_task_status_rejected(client: TestClient) -> None:
         },
     )
     assert res.status_code == 422
+
+
+def test_get_task_by_id(client: TestClient) -> None:
+    """Retrieve existing task by ID."""
+    user = client.post(
+        "/api/v1/users",
+        json={"name": "Worker Get", "email": "workerget@example.com"},
+    ).json()["data"]
+
+    project = client.post(
+        "/api/v1/projects",
+        json={"name": "Project Get", "owner_id": user["id"]},
+    ).json()["data"]
+
+    task = client.post(
+        "/api/v1/tasks",
+        json={"title": "Get Task Test", "project_id": project["id"]},
+    ).json()["data"]
+
+    res = client.get(f"/api/v1/tasks/{task['id']}")
+    assert res.status_code == 200
+    assert res.json()["data"]["id"] == task["id"]
+    assert res.json()["data"]["title"] == "Get Task Test"
+
+
+def test_get_task_not_found(client: TestClient) -> None:
+    """Nonexistent task returns 404."""
+    res = client.get("/api/v1/tasks/tsk_nonexistent")
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+
+def test_update_task_fields(client: TestClient) -> None:
+    """Update title, description, priority, and due date of a task."""
+    user = client.post(
+        "/api/v1/users",
+        json={"name": "Worker Update", "email": "workerupdate@example.com"},
+    ).json()["data"]
+
+    project = client.post(
+        "/api/v1/projects",
+        json={"name": "Project Update", "owner_id": user["id"]},
+    ).json()["data"]
+
+    task = client.post(
+        "/api/v1/tasks",
+        json={"title": "Original Title", "project_id": project["id"]},
+    ).json()["data"]
+
+    patch_res = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"title": "Updated Title", "priority": "high", "description": "New description"},
+    )
+    assert patch_res.status_code == 200
+    assert patch_res.json()["data"]["title"] == "Updated Title"
+    assert patch_res.json()["data"]["priority"] == "high"
+    assert patch_res.json()["data"]["description"] == "New description"
+
+
+def test_delete_task(client: TestClient) -> None:
+    """Delete a task by ID."""
+    user = client.post(
+        "/api/v1/users",
+        json={"name": "Worker Del", "email": "workerdel@example.com"},
+    ).json()["data"]
+
+    project = client.post(
+        "/api/v1/projects",
+        json={"name": "Project Del", "owner_id": user["id"]},
+    ).json()["data"]
+
+    task = client.post(
+        "/api/v1/tasks",
+        json={"title": "Task To Delete", "project_id": project["id"]},
+    ).json()["data"]
+
+    del_res = client.delete(f"/api/v1/tasks/{task['id']}")
+    assert del_res.status_code == 200
+    assert del_res.json()["data"]["message"] == "Task deleted successfully"
+
+    assert client.get(f"/api/v1/tasks/{task['id']}").status_code == 404
+

@@ -37,6 +37,31 @@ def test_create_project_invalid_owner_rejected(client: TestClient) -> None:
     assert res.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
 
 
+def test_get_project_by_id(client: TestClient) -> None:
+    """Retrieve existing project by ID."""
+    user = client.post(
+        "/api/v1/users",
+        json={"name": "Owner Get", "email": "ownerget@example.com"},
+    ).json()["data"]
+
+    created = client.post(
+        "/api/v1/projects",
+        json={"name": "API Monitoring", "owner_id": user["id"]},
+    ).json()["data"]
+
+    res = client.get(f"/api/v1/projects/{created['id']}")
+    assert res.status_code == 200
+    assert res.json()["data"]["id"] == created["id"]
+    assert res.json()["data"]["name"] == "API Monitoring"
+
+
+def test_get_project_not_found(client: TestClient) -> None:
+    """Nonexistent project returns 404."""
+    res = client.get("/api/v1/projects/prj_nonexistent")
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+
 def test_update_project(client: TestClient) -> None:
     """Update project status and description."""
     user = client.post(
